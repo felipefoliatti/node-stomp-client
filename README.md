@@ -1,24 +1,18 @@
 Stomp Client
 ===========
 
-[![Build Status](https://secure.travis-ci.org/easternbloc/node-stomp-client.png)](http://travis-ci.org/easternbloc/node-stomp-client)
-
-A node.js [STOMP](http://stomp.github.com) client. Props goes to [Russell
-Haering](https://github.com/russellhaering/node-stomp-broker) for doing the
-initial legwork.
+This repository is a fork from [ahudak](https://github.com/ahudak), adding a promise response for publish method.
+Ahudak implemented the heart-beat that check if the server is alive.
+But when the Queue goes down without notifying the underlying TCP conenction and therefore not notifying the stream, the stream remains open and publish will be lost. This repository also add a check, waiting the server answer. 
 
 The following enhancements have been added:
 
-*   Unit tests
-*   Ability to support different protocol versions (1.0 or 1.1) - more work needed
-*   Inbound frame validation (required / regex'able header values)
-*   Support for UNSUBSCRIBE frames in client
-*   Ability to add custom headers to SUBSCRIBE/UNSUBSCRIBE frames
-*   ACK and NACK support
+*   Control heart-beat (added by [ahudak](https://github.com/ahudak))
+*   Added promise to publish to control when server return the RECEIPT
 
 ## Installation
 
-	npm install stomp-client
+	npm install git+https://github.com/felipefoliatti/node-stomp-client.git
 
 ## Super basic example
 
@@ -55,7 +49,7 @@ Require returns a constructor for STOMP client instances.
 For backwards compatibility, `require('stomp-client').StompClient` is also
 supported.
 
-## Stomp(address, [port], [user], [pass], [protocolVersion], [reconnectOpts])
+## Stomp(address, [port], [user], [pass], [protocolVersion], [reconnectOpts], [heartBeat])
 
 - `address`: address to connect to, default is `"127.0.0.1"`
 - `port`: port to connect to, default is `61613`
@@ -63,14 +57,15 @@ supported.
 - `pass`: password to authenticate with, default is `""`
 - `protocolVersion`: see below, defaults to `"1.0"`
 - `reconnectOpts`: see below, defaults to `{}`
+- `heartBeat`: se below, defaults to `"0,0"`
 
-Protocol version negotiation is not currently supported and version `"1.0"` is
-the only supported version.
-
-ReconnectOpts should contain an integer `retries` specifying the maximum number
+reconnectOpts should contain an integer `retries` specifying the maximum number
 of reconnection attempts, and a `delay` which specifies the reconnection delay.
  (reconnection timings are calculated using exponential backoff. The first reconnection
  happens immediately, the second reconnection happens at `+delay` ms, the third at `+ 2*delay` ms, etc).
+
+heartBeat should contain a string separated by , containing two integers values in milliseconds. The first value (maxServerExpectedRateMilliseconds) refers to interval where a byte is sent to server. The second value (maxClientExpectedRateMilliseconds) refers to the interval where the client check if servers answer. The client check maxClientExpectedRateMilliseconds three times before rise an "reconnect".
+An example is `"3000,6000"`.
 
 ## stomp.connect([callback, [errorCallback]])
 
@@ -103,6 +98,10 @@ No reconnections should be attempted, nor errors thrown as a result of this call
 - `queue`: queue to publish to
 - `message`: message to publish, a string or buffer
 - `headers`: headers to add to the PUBLISH message
+
+This method returns a Promise.
+If `correlation-id` header is set, then the `receipt` header will be set and this method return a promise that will `resolve` when server send a RECEIPT, answering the publish. It will reject after 20s without any response from server.
+If `correlation-id` is not set, the `receipt` header will not be set and the promise will resolve instantly.
 
 ## stomp.ack(messageId, subscription, [transaction]),
 ## stomp.nack(messageId, subscription, [transaction])

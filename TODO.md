@@ -2,20 +2,10 @@
 
 Here's a list of things that could be done, in no particular order.
 
-## Receipts
 
-Every send function that sends a frame that can have a receipt header should
-also take a receipt callback, and auto-add a receipt header if callback is
-passed.
+## Version 1.2
 
-The DISCONNECT header should probably always request a RECEIPT, so guarantee
-flushing of data. 1.2 says you
-[should](http://stomp.github.io/stomp-specification-1.2.html#DISCONNECT), and
-while its not mentioned as a should in 1.0, receipt IDs are supported.
-
-## Version 1.1 and 1.2
-
-Version 1.1 and 1.2 support should be added, and options should allow the higher
+Version 1.2 support should be added, and options should allow the higher
 protocol versions to be requested (note that version fallback will occur, the
 newer versions fall back to 1.0).
 
